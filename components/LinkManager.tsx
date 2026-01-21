@@ -20,11 +20,14 @@ interface PrayerTimes {
 }
 
 const COMMON_EMOJIS = [
-  { category: "Umum", items: ["🔗", "🌐", "⭐", "🔥", "💡", "📌"] },
-  { category: "Sekolah", items: ["🏫", "📚", "🎓", "🎒", "📝", "🚌", "🔬", "🎨"] },
-  { category: "Digital", items: ["💻", "🖥️", "📱", "🖱️", "⌨️", "☁️", "wifi", "🔋"] },
-  { category: "Sosmed", items: ["📸", "🎥", "🐦", "💬", "📞", "▶️", "🎵", "📢"] },
-  { category: "Info", items: ["📅", "📊", "📁", "⚙️", "🔒", "🏆", "⚽", "🏥"] },
+  { category: "Umum", items: ["🔗", "🌐", "⭐", "🔥", "💡", "📌", "✅", "❌", "❓", "🔔", "🏠", "🔎"] },
+  { category: "Siswa & Ekskul", items: ["👦", "👧", "🎒", "🧢", "🏃", "⚽", "🏀", "🏊", "🎨", "🎭", "🏕️", "🥁"] },
+  { category: "Kelas & Mapel", items: ["🏫", "📖", "📚", "📏", "📐", "🔬", "🧪", "🧬", "🌍", "🕌", "🇬🇧", "🔢"] },
+  { category: "Guru & Staff", items: ["👨‍🏫", "👩‍🏫", "👔", "👓", "💼", "📢", "🖊️", "📝", "☕", "🗓️", "🤝", "🥇"] },
+  { category: "Dokumen & Data", items: ["📄", "📑", "📋", "📊", "📂", "📜", "📥", "🗳️", "📅", "📈", "🗂️", "🖨️"] },
+  { category: "Teknologi", items: ["💻", "🖥️", "📱", "🖱️", "⌨️", "☁️", "📶", "🔋", "💾", "📷", "📹", "🎧"] },
+  { category: "Fasilitas", items: ["🚌", "🚑", "🏥", "🍽️", "🥤", "🚽", "🌳", "🏢", "🚪", "🔑", "🔧", "🚮"] },
+  { category: "Sosmed", items: ["📸", "🎥", "🐦", "💬", "📞", "▶️", "🎵", "🛒", "📧", "🗺️", "🔴", "🔵"] },
 ];
 
 export const LinkManager: React.FC<LinkManagerProps> = ({ links, setLinks, readOnly = false }) => {
@@ -376,19 +379,19 @@ export const LinkManager: React.FC<LinkManagerProps> = ({ links, setLinks, readO
                     initial={{ opacity: 0, scale: 0.9, y: 10 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                    className="absolute top-14 left-0 z-50 bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl rounded-xl p-3 w-full md:w-64 max-h-60 overflow-y-auto custom-scrollbar"
+                    className="absolute top-14 left-0 z-50 bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl rounded-xl p-3 w-full md:w-80 max-h-64 overflow-y-auto custom-scrollbar"
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {COMMON_EMOJIS.map((category) => (
                         <div key={category.category}>
-                          <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{category.category}</h5>
-                          <div className="grid grid-cols-6 gap-1">
+                          <h5 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 border-b border-gray-200/50 pb-1">{category.category}</h5>
+                          <div className="grid grid-cols-6 gap-2">
                             {category.items.map(emoji => (
                               <button
                                 key={emoji}
                                 type="button"
                                 onClick={() => { setSelectedEmoji(emoji); setShowEmojiPicker(false); }}
-                                className="w-8 h-8 flex items-center justify-center text-lg hover:bg-blue-100 rounded-lg transition-colors"
+                                className="w-9 h-9 flex items-center justify-center text-xl hover:bg-blue-100 rounded-lg transition-colors hover:scale-110 active:scale-95"
                               >
                                 {emoji}
                               </button>
