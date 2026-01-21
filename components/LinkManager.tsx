@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ExternalLink, Wand2, Loader2, Search, Clock, MapPin, ChevronRight, MoonStar, Pencil, Save, X, GripVertical } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, ExternalLink, Wand2, Loader2, Search, Clock, MapPin, ChevronRight, MoonStar, Pencil, Save, X, GripVertical, Smile } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { LinkItem, COLORS } from '../types';
 import { suggestEmoji } from '../services/geminiService';
@@ -19,13 +19,26 @@ interface PrayerTimes {
   [key: string]: string;
 }
 
+const COMMON_EMOJIS = [
+  { category: "Umum", items: ["🔗", "🌐", "⭐", "🔥", "💡", "📌"] },
+  { category: "Sekolah", items: ["🏫", "📚", "🎓", "🎒", "📝", "🚌", "🔬", "🎨"] },
+  { category: "Digital", items: ["💻", "🖥️", "📱", "🖱️", "⌨️", "☁️", "wifi", "🔋"] },
+  { category: "Sosmed", items: ["📸", "🎥", "🐦", "💬", "📞", "▶️", "🎵", "📢"] },
+  { category: "Info", items: ["📅", "📊", "📁", "⚙️", "🔒", "🏆", "⚽", "🏥"] },
+];
+
 export const LinkManager: React.FC<LinkManagerProps> = ({ links, setLinks, readOnly = false }) => {
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [selectedEmoji, setSelectedEmoji] = useState('🔗'); // State for emoji
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false); // Toggle picker
+  
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  const pickerRef = useRef<HTMLDivElement>(null);
+
   // Time and Prayer State
   const [currentTime, setCurrentTime] = useState(new Date());
   const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
@@ -41,6 +54,17 @@ export const LinkManager: React.FC<LinkManagerProps> = ({ links, setLinks, readO
     }, 1000);
     return () => clearInterval(timer);
   }, [prayerTimes]);
+
+  // Click outside listener for emoji picker
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+        setShowEmojiPicker(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Fetch Prayer Times (Pacet Coordinates: -7.67, 112.53)
   useEffect(() => {
@@ -142,28 +166,29 @@ export const LinkManager: React.FC<LinkManagerProps> = ({ links, setLinks, readO
       // Update existing link
       setLinks((prev) => prev.map(l => 
         l.id === editingId 
-          ? { ...l, title: newLinkTitle, url: newLinkUrl.startsWith('http') ? newLinkUrl : `https://${newLinkUrl}` }
+          ? { 
+              ...l, 
+              title: newLinkTitle, 
+              url: newLinkUrl.startsWith('http') ? newLinkUrl : `https://${newLinkUrl}`,
+              emoji: selectedEmoji 
+            }
           : l
       ));
       cancelEditing();
     } else {
-      // Add new link
-      let emoji = "🔗";
-      setIsGenerating(true);
-      emoji = await suggestEmoji(newLinkTitle);
-      setIsGenerating(false);
-
+      // Add new link - Use selectedEmoji directly
       const newLink: LinkItem = {
         id: Date.now().toString(),
         title: newLinkTitle,
         url: newLinkUrl.startsWith('http') ? newLinkUrl : `https://${newLinkUrl}`,
-        emoji: emoji,
+        emoji: selectedEmoji,
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
       };
 
       setLinks((prev) => [newLink, ...prev]);
       setNewLinkTitle('');
       setNewLinkUrl('');
+      setSelectedEmoji('🔗'); // Reset
     }
   };
 
@@ -171,20 +196,23 @@ export const LinkManager: React.FC<LinkManagerProps> = ({ links, setLinks, readO
     setEditingId(link.id);
     setNewLinkTitle(link.title);
     setNewLinkUrl(link.url);
+    setSelectedEmoji(link.emoji);
   };
 
   const cancelEditing = () => {
     setEditingId(null);
     setNewLinkTitle('');
     setNewLinkUrl('');
+    setSelectedEmoji('🔗');
+    setShowEmojiPicker(false);
   };
 
   const handleMagicIcon = async () => {
     if (!newLinkTitle) return;
     setIsGenerating(true);
     const emoji = await suggestEmoji(newLinkTitle);
+    setSelectedEmoji(emoji); // Update state directly
     setIsGenerating(false);
-    return emoji;
   };
 
   const deleteLink = (id: string) => {
@@ -305,7 +333,6 @@ export const LinkManager: React.FC<LinkManagerProps> = ({ links, setLinks, readO
           {/* Responsive Grid for Prayer Times */}
           <div className="grid grid-cols-5 gap-1 md:gap-2 bg-white/10 rounded-lg p-2 backdrop-blur-sm">
             {['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((pKey) => {
-              // Updated to full names
               const pNameMap:Record<string, string> = { 'Fajr': 'Subuh', 'Dhuhr': 'Dzuhur', 'Asr': 'Asar', 'Maghrib': 'Maghrib', 'Isha': 'Isya' };
               const time = prayerTimes[pKey];
               const isActive = nextPrayer?.time === time;
@@ -339,9 +366,52 @@ export const LinkManager: React.FC<LinkManagerProps> = ({ links, setLinks, readO
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             onSubmit={handleSubmit} 
-            className={`p-3 rounded-xl border shadow-sm flex flex-col gap-2 mb-3 transition-colors ${editingId ? 'bg-blue-50 border-blue-200' : 'bg-white/40 border-white/40'}`}
+            className={`relative p-3 rounded-xl border shadow-sm flex flex-col gap-2 mb-3 transition-colors ${editingId ? 'bg-blue-50 border-blue-200' : 'bg-white/40 border-white/40'}`}
           >
+            {/* Emoji Picker Popover */}
+             <AnimatePresence>
+                {showEmojiPicker && (
+                  <motion.div
+                    ref={pickerRef}
+                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                    className="absolute top-14 left-0 z-50 bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl rounded-xl p-3 w-full md:w-64 max-h-60 overflow-y-auto custom-scrollbar"
+                  >
+                    <div className="space-y-3">
+                      {COMMON_EMOJIS.map((category) => (
+                        <div key={category.category}>
+                          <h5 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{category.category}</h5>
+                          <div className="grid grid-cols-6 gap-1">
+                            {category.items.map(emoji => (
+                              <button
+                                key={emoji}
+                                type="button"
+                                onClick={() => { setSelectedEmoji(emoji); setShowEmojiPicker(false); }}
+                                className="w-8 h-8 flex items-center justify-center text-lg hover:bg-blue-100 rounded-lg transition-colors"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+             </AnimatePresence>
+
             <div className="flex gap-2">
+              {/* Emoji Trigger Button */}
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="w-10 h-10 md:h-[38px] shrink-0 bg-white/80 border border-gray-200 rounded-lg flex items-center justify-center text-xl hover:bg-white hover:border-blue-400 transition-all shadow-sm"
+                title="Pilih Ikon"
+              >
+                {selectedEmoji}
+              </button>
+
               <input
                 type="text"
                 value={newLinkTitle}
@@ -353,7 +423,8 @@ export const LinkManager: React.FC<LinkManagerProps> = ({ links, setLinks, readO
                 type="button"
                 onClick={handleMagicIcon}
                 disabled={!newLinkTitle || isGenerating}
-                className="p-2 md:p-1.5 bg-purple-100 text-purple-600 rounded-lg"
+                className="p-2 md:p-1.5 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors"
+                title="Otomatis pilih ikon (AI)"
               >
                 {isGenerating ? <Loader2 className="animate-spin w-4 h-4 md:w-3 md:h-3" /> : <Wand2 className="w-4 h-4 md:w-3 md:h-3" />}
               </button>
@@ -363,7 +434,7 @@ export const LinkManager: React.FC<LinkManagerProps> = ({ links, setLinks, readO
                 type="text"
                 value={newLinkUrl}
                 onChange={(e) => setNewLinkUrl(e.target.value)}
-                placeholder="URL"
+                placeholder="URL (contoh: google.com)"
                 className="flex-1 bg-white/80 border border-gray-200 rounded-lg px-2 py-2 md:py-1.5 text-sm md:text-xs outline-none focus:ring-1 focus:ring-blue-500"
               />
               <div className="flex gap-1">
